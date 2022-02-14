@@ -1,2 +1,2 @@
-# sentiment_based_product_recommendation_system
+# sentiment based product recommendation system
 Upgrad sentiment based product recommendation system capstone project
