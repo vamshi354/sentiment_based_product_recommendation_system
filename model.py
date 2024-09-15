@@ -19,67 +19,61 @@ nltk.download('omw-1.4')
 # load the pickle files 
 count_vector = pk.load(open('pickle_file/count_vector.pkl','rb'))            # Count Vectorizer
 tfidf_transformer = pk.load(open('pickle_file/tfidf_transformer.pkl','rb')) # TFIDF Transformer
-model = pk.load(open('pickle_file/model.pkl','rb'))                          # Classification Model
+model = pk.load(open('pickle_file/final_model.pkl','rb'))                          # Classification Model
 recommend_matrix = pk.load(open('pickle_file/user_final_rating.pkl','rb'))   # User-User Recommendation System 
 
 nlp = spacy.load('en_core_web_sm',disable=['ner','parser'])
 
 product_df = pd.read_csv('sample30.csv',sep=",")
+stopword_list= stopwords.words('english')
 
 
 # special_characters removal
+# special_characters removal
 def remove_special_characters(text, remove_digits=True):
     """Remove the special Characters"""
-    pattern = r'[^a-zA-z0-9\s]' if not remove_digits else r'[^a-zA-z\s]'
+    pattern = r'[^a-zA-z0-9\s]'  if not remove_digits  else r'[^a-zA-z\s]'
     text = re.sub(pattern, '', text)
     return text
-
+# convert in lower case
 def to_lowercase(words):
     """Convert all characters to lowercase from list of tokenized words"""
-    new_words = []
-    for word in words:
-        new_word = word.lower()
-        new_words.append(new_word)
-    return new_words
+    lower_case_words = [word.lower() for word in words]
+    return lower_case_words
 
+# removing the punctuation & splchars
 def remove_punctuation_and_splchars(words):
     """Remove punctuation from list of tokenized words"""
-    new_words = []
+    cleaned_words = []
     for word in words:
         new_word = re.sub(r'[^\w\s]', '', word)
         if new_word != '':
             new_word = remove_special_characters(new_word, True)
-            new_words.append(new_word)
-    return new_words
+            cleaned_words.append(new_word)
+    return cleaned_words
 
-stopword_list= stopwords.words('english')
 
+# remove the stopwords
 def remove_stopwords(words):
     """Remove stop words from list of tokenized words"""
-    new_words = []
-    for word in words:
-        if word not in stopword_list:
-            new_words.append(word)
-    return new_words
+    clean_words = [word for word in words if word not in stopword_list]
+    return clean_words
 
+# stemming the words
 def stem_words(words):
     """Stem words in list of tokenized words"""
     stemmer = LancasterStemmer()
-    stems = []
-    for word in words:
-        stem = stemmer.stem(word)
-        stems.append(stem)
+    stems = [stemmer.stem(word) for word in words]
     return stems
 
+# lemmatizing the words.
 def lemmatize_verbs(words):
     """Lemmatize verbs in list of tokenized words"""
     lemmatizer = WordNetLemmatizer()
-    lemmas = []
-    for word in words:
-        lemma = lemmatizer.lemmatize(word, pos='v')
-        lemmas.append(lemma)
+    lemmas = [lemmatizer.lemmatize(word) for word in words]
     return lemmas
 
+# normalizing the words.
 def normalize(words):
     words = to_lowercase(words)
     words = remove_punctuation_and_splchars(words)
@@ -97,7 +91,8 @@ def model_predict(text):
     output = model.predict(tfidf_vector)
     return output
 
-def normalize_and_lemmaize(input_text):
+# normalize and lemmatized.
+def normalize_and_lemmatize(input_text):
     input_text = remove_special_characters(input_text)
     words = nltk.word_tokenize(input_text)
     words = normalize(words)
@@ -110,7 +105,7 @@ def recommend_products(user_name):
     product_list = pd.DataFrame(recommend_matrix.loc[user_name].sort_values(ascending=False)[0:20])
     product_frame = product_df[product_df.name.isin(product_list.index.tolist())]
     output_df = product_frame[['name','reviews_text']]
-    output_df['lemmatized_text'] = output_df['reviews_text'].map(lambda text: normalize_and_lemmaize(text))
+    output_df['lemmatized_text'] = output_df['reviews_text'].map(lambda text: normalize_and_lemmatize(text))
     output_df['predicted_sentiment'] = model_predict(output_df['lemmatized_text'])
     return output_df
     
